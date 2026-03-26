@@ -10,13 +10,16 @@ export function registerUserTools(server: McpServer, client: PloomesClient): voi
     {
       title: "List Users",
       description:
-        "List users in the Ploomes CRM account. Useful for finding OwnerId values when creating or assigning contacts, deals, and tasks.",
+        "List users in the Ploomes CRM account. Returns Id, Name, Email, AvatarUrl, RoleId, ProfileId, Phone, etc. " +
+        "Use the returned Id as OwnerId when creating or assigning contacts, deals, tasks, and interaction records. " +
+        "Use $expand=Role,Profile,Teams,OtherProperties to include related data.",
       inputSchema: {
-        filter: z.string().optional().describe("OData $filter expression"),
-        select: z.string().optional().describe('Fields to return. E.g.: "Id,Name,Email"'),
-        orderby: z.string().optional().describe("Sort expression"),
-        top: z.number().optional().default(50).describe("Max items (default 50, max 300)"),
-        skip: z.number().optional().default(0).describe("Items to skip"),
+        filter: z.string().optional().describe('OData $filter expression. E.g.: "Name eq \'John\'", "Email eq \'john@example.com\'"'),
+        select: z.string().optional().describe('Fields to return. E.g.: "Id,Name,Email,RoleId,ProfileId,Phone"'),
+        expand: z.string().optional().describe('Related entities to include. Available: "Role", "Profile", "Teams", "OtherProperties". E.g.: "Role,Profile,Teams,OtherProperties"'),
+        orderby: z.string().optional().describe('Sort expression. E.g.: "Name asc"'),
+        top: z.number().optional().default(50).describe("Max items to return (default 50, max 300)"),
+        skip: z.number().optional().default(0).describe("Items to skip for pagination"),
       },
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
     },

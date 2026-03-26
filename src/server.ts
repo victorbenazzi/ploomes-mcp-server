@@ -11,6 +11,7 @@ import { registerAccountTools } from "./tools/account.js";
 import { registerQuoteTools } from "./tools/quotes.js";
 import { registerOrderTools } from "./tools/orders.js";
 import { registerProductTools } from "./tools/products.js";
+import { registerLookupTools } from "./tools/lookups.js";
 
 export function createServer(): McpServer {
   const userKey = process.env.PLOOMES_USER_KEY;
@@ -47,6 +48,9 @@ export function createServer(): McpServer {
   registerQuoteTools(server, client);
   registerOrderTools(server, client);
   registerProductTools(server, client);
+
+  // Lookups — sub-resource tools for discovering valid IDs and enum values
+  registerLookupTools(server, client);
 
   return server;
 }

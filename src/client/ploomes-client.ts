@@ -27,13 +27,17 @@ export class PloomesClient {
   }
 
   private buildUrl(path: string, params?: Record<string, string>): string {
-    const url = new URL(`${this.baseUrl}${path}`);
+    let url = `${this.baseUrl}${path}`;
     if (params) {
-      for (const [key, value] of Object.entries(params)) {
-        url.searchParams.set(key, value);
+      const entries = Object.entries(params);
+      if (entries.length > 0) {
+        const qs = entries
+          .map(([key, val]) => `${key}=${encodeURIComponent(val)}`)
+          .join("&");
+        url += `?${qs}`;
       }
     }
-    return url.toString();
+    return url;
   }
 
   private async request<T>(

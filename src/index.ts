@@ -5,7 +5,49 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { createServer } from "./server.js";
 import { logger } from "./utils/logger.js";
 
+const VERSION = "1.0.0";
+
+function printHelp(): void {
+  console.log(`
+  ploomes-mcp-server v${VERSION}
+  Unofficial MCP server for Ploomes CRM
+
+  Usage:
+    ploomes-mcp-server              Start the MCP server (stdio)
+    ploomes-mcp-server init         Interactive setup wizard
+    ploomes-mcp-server --help       Show this help
+    ploomes-mcp-server --version    Show version
+
+  Environment:
+    PLOOMES_USER_KEY      (required) Your Ploomes API key
+    MCP_TRANSPORT         "stdio" (default) or "http"
+    MCP_HTTP_PORT         HTTP port when using http transport (default: 3000)
+
+  Quick start:
+    npx ploomes-mcp-server init
+`);
+}
+
 async function main(): Promise<void> {
+  const arg = process.argv[2];
+
+  if (arg === "init" || arg === "setup") {
+    const { runSetup } = await import("./cli/setup.js");
+    await runSetup();
+    return;
+  }
+
+  if (arg === "--help" || arg === "-h") {
+    printHelp();
+    return;
+  }
+
+  if (arg === "--version" || arg === "-v") {
+    console.log(VERSION);
+    return;
+  }
+
+  // Default: start MCP server
   const transportType = process.env.MCP_TRANSPORT ?? "stdio";
   const server = createServer();
 
