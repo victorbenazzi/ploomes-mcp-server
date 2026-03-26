@@ -51,7 +51,7 @@ MCP_TRANSPORT env var
 
 ### 2. Server (`src/server.ts`)
 
-Creates the `McpServer` instance and registers all 43 tools. This is where:
+Creates the `McpServer` instance and registers all 56 tools. This is where:
 - The `PloomesClient` is instantiated with credentials from environment
 - Tool registration functions from each module are called
 - Tools are grouped by priority:

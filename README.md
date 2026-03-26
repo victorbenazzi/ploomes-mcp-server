@@ -1,70 +1,49 @@
 # Ploomes MCP Server
 
-Unofficial [Model Context Protocol](https://modelcontextprotocol.io) server that connects AI agents to the [Ploomes CRM](https://www.ploomes.com) REST API. Exposes **43 tools** covering contacts, deals, tasks, pipelines, interactions, quotes, orders, products, fields, users, and account management.
+Unofficial [Model Context Protocol](https://modelcontextprotocol.io) server that connects AI agents to the [Ploomes CRM](https://www.ploomes.com) REST API. Exposes **56 tools** covering contacts, deals, tasks, pipelines, interactions, quotes, orders, products, fields, users, account management, and lookup/reference data.
 
-Works with any MCP-compatible client: **Claude Desktop**, **Claude Code**, **Claude.ai** (remote), **ChatGPT** (remote), and others.
+Works with any MCP-compatible client: **Claude Desktop**, **Claude Code**, **Cursor**, **VS Code (Copilot)**, and others.
 
 ---
 
 ## Quick Start
 
+### One-command setup
+
+```bash
+npx ploomes-mcp-server init
+```
+
+The interactive wizard will:
+
+1. Ask for your **Ploomes User-Key**
+2. Ask **where to install** (Claude Desktop, Claude Code, Cursor, VS Code, or manual)
+3. Ask if **project-level or global**
+4. Write the config automatically
+
+That's it. No cloning, no building, no manual config editing.
+
 ### Prerequisites
 
 - **Node.js 20+** (uses native `fetch`)
-- A **Ploomes User-Key** (get it from Ploomes > Settings > Integration)
-
-### Install & Build
-
-```bash
-git clone https://github.com/your-username/ploomes-mcp-server.git
-cd ploomes-mcp-server
-npm install
-npm run build
-```
-
-### Configure
-
-```bash
-cp .env.example .env
-# Edit .env and set your PLOOMES_USER_KEY
-```
-
-### Run
-
-```bash
-# stdio transport (default — for Claude Desktop / Claude Code)
-PLOOMES_USER_KEY=your_key node dist/index.js
-
-# HTTP transport (for remote access via Claude.ai / ChatGPT)
-MCP_TRANSPORT=http PLOOMES_USER_KEY=your_key node dist/index.js
-```
+- A **Ploomes User-Key** (get it from Ploomes > Settings > Integration > API Key)
 
 ---
 
-## Documentation
+## Manual Setup
 
-| Document | Description |
-|---|---|
-| [Architecture](docs/architecture.md) | System design, data flow, component breakdown |
-| [Configuration](docs/configuration.md) | Environment variables, transport options, deployment |
-| [Tools Reference](docs/tools-reference.md) | All 43 tools with parameters, examples, and annotations |
-| [Testing & Debugging](docs/testing.md) | MCP Inspector, Claude Desktop, Claude Code setup |
-| [Examples & Recipes](docs/examples.md) | Real-world CRM workflows with step-by-step tool calls |
-
----
-
-## Client Setup
+If you prefer to configure manually, add this to your MCP client config:
 
 ### Claude Desktop
 
-Add to your `claude_desktop_config.json`:
+File: `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
 
 ```json
 {
   "mcpServers": {
     "ploomes": {
-      "command": "node",
-      "args": ["/absolute/path/to/ploomes-mcp-server/dist/index.js"],
+      "command": "npx",
+      "args": ["-y", "ploomes-mcp-server"],
       "env": {
         "PLOOMES_USER_KEY": "your-key-here"
       }
@@ -75,14 +54,14 @@ Add to your `claude_desktop_config.json`:
 
 ### Claude Code
 
-Add to your project's `.mcp.json`:
+Project-level `.mcp.json`:
 
 ```json
 {
   "mcpServers": {
     "ploomes": {
-      "command": "node",
-      "args": ["/absolute/path/to/ploomes-mcp-server/dist/index.js"],
+      "command": "npx",
+      "args": ["-y", "ploomes-mcp-server"],
       "env": {
         "PLOOMES_USER_KEY": "your-key-here"
       }
@@ -91,43 +70,113 @@ Add to your project's `.mcp.json`:
 }
 ```
 
-Or add it via the CLI:
+Or via CLI:
 
 ```bash
-claude mcp add ploomes node /absolute/path/to/ploomes-mcp-server/dist/index.js \
-  -e PLOOMES_USER_KEY=your-key-here
+claude mcp add ploomes -- npx -y ploomes-mcp-server -e PLOOMES_USER_KEY=your-key-here
+```
+
+### Cursor
+
+File: `~/.cursor/mcp.json`
+
+```json
+{
+  "mcpServers": {
+    "ploomes": {
+      "command": "npx",
+      "args": ["-y", "ploomes-mcp-server"],
+      "env": {
+        "PLOOMES_USER_KEY": "your-key-here"
+      }
+    }
+  }
+}
 ```
 
 ### Remote (HTTP Transport)
 
-Start the server with HTTP transport on your VPS:
-
 ```bash
-MCP_TRANSPORT=http MCP_HTTP_PORT=3000 PLOOMES_USER_KEY=your-key node dist/index.js
+MCP_TRANSPORT=http MCP_HTTP_PORT=3000 PLOOMES_USER_KEY=your-key npx ploomes-mcp-server
 ```
 
-Then configure your MCP client to connect to `https://your-server.com/mcp` (use a reverse proxy like nginx/caddy for HTTPS).
+Then point your MCP client to `https://your-server.com/mcp` (use a reverse proxy for HTTPS).
+
+---
+
+## CLI
+
+```bash
+npx ploomes-mcp-server              # Start the MCP server (stdio)
+npx ploomes-mcp-server init         # Interactive setup wizard
+npx ploomes-mcp-server --help       # Show usage
+npx ploomes-mcp-server --version    # Show version
+```
+
+### Environment Variables
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `PLOOMES_USER_KEY` | **Yes** | — | Your Ploomes API key |
+| `MCP_TRANSPORT` | No | `stdio` | `stdio` or `http` |
+| `MCP_HTTP_PORT` | No | `3000` | HTTP port (when using http transport) |
+| `PLOOMES_BASE_URL` | No | `https://api2.ploomes.com` | Ploomes API base URL |
+| `PLOOMES_RATE_LIMIT` | No | `120` | Max requests per minute |
 
 ---
 
 ## Tools Overview
 
+### CRUD Tools (44)
+
 | Category | Tools | Operations |
 |---|---|---|
 | **Contacts** | 5 | list, get, create, update, delete |
 | **Deals** | 8 | list, get, create, update, delete, win, lose, reopen |
-| **Tasks** | 5 | list, create, update, delete, finish |
+| **Tasks** | 6 | list, get, create, update, delete, finish |
+| **Interactions** | 5 | list, get, create, update, delete |
+| **Quotes** | 5 | list, get, create, update, delete |
+| **Orders** | 5 | list, get, create, update, delete |
+| **Products** | 5 | list, get, create, update, delete |
 | **Pipelines** | 2 | list pipelines, list stages |
-| **Interactions** | 4 | list, create, update, delete |
-| **Quotes** | 4 | list, create, update, delete |
-| **Orders** | 4 | list, create, update, delete |
-| **Products** | 4 | list, create, update, delete |
 | **Fields** | 1 | list custom fields |
 | **Users** | 1 | list users |
 | **Account** | 1 | get account info |
-| | **43 total** | |
+
+### Lookup Tools (12)
+
+Reference tools for discovering valid IDs, enum values, and dropdown options used by the CRUD tools above.
+
+| Tool | Description |
+|---|---|
+| `ploomes_contacts_types_list` | Contact types (Person, Company, etc.) |
+| `ploomes_contacts_status_list` | Contact statuses (Active, Inactive, etc.) |
+| `ploomes_contacts_origins_list` | Contact origins (Website, Referral, etc.) |
+| `ploomes_deals_status_list` | Deal statuses (Open, Won, Lost) |
+| `ploomes_deals_loss_reasons_list` | Loss reasons for marking deals as lost |
+| `ploomes_tasks_types_list` | Task types (Call, Meeting, Email, etc.) |
+| `ploomes_currencies_list` | Available currencies |
+| `ploomes_fields_entities_list` | Entities that support custom fields |
+| `ploomes_fields_types_list` | Custom field data types |
+| `ploomes_fields_options_tables_list` | Dropdown option tables |
+| `ploomes_fields_options_list` | Options within a dropdown table |
+| `ploomes_orders_stages_list` | Order workflow stages |
+
+**Total: 56 tools**
 
 See [Tools Reference](docs/tools-reference.md) for complete documentation of every tool.
+
+---
+
+## Documentation
+
+| Document | Description |
+|---|---|
+| [Architecture](docs/architecture.md) | System design, data flow, component breakdown |
+| [Configuration](docs/configuration.md) | Environment variables, transport options, deployment |
+| [Tools Reference](docs/tools-reference.md) | All 56 tools with parameters, examples, and annotations |
+| [Testing & Debugging](docs/testing.md) | MCP Inspector, Claude Desktop, Claude Code setup |
+| [Examples & Recipes](docs/examples.md) | Real-world CRM workflows with step-by-step tool calls |
 
 ---
 
@@ -136,8 +185,10 @@ See [Tools Reference](docs/tools-reference.md) for complete documentation of eve
 ```
 ploomes-mcp-server/
 ├── src/
-│   ├── index.ts              # Entry point — transport detection (stdio / HTTP)
+│   ├── index.ts              # Entry point — CLI routing + transport detection
 │   ├── server.ts             # Creates McpServer, registers all tools
+│   ├── cli/
+│   │   └── setup.ts          # Interactive setup wizard (npx init)
 │   ├── client/
 │   │   ├── rate-limiter.ts   # Sliding window rate limiter (120 req/min)
 │   │   ├── odata-builder.ts  # OData v4 query parameter builder
@@ -145,17 +196,19 @@ ploomes-mcp-server/
 │   ├── tools/
 │   │   ├── contacts.ts       # 5 tools — CRUD
 │   │   ├── deals.ts          # 8 tools — CRUD + Win/Lose/Reopen
-│   │   ├── tasks.ts          # 5 tools — CRUD + Finish
+│   │   ├── tasks.ts          # 6 tools — CRUD + Finish
 │   │   ├── pipelines.ts      # 2 tools — List pipelines & stages
-│   │   ├── interactions.ts   # 4 tools — CRUD
-│   │   ├── quotes.ts         # 4 tools — CRUD
-│   │   ├── orders.ts         # 4 tools — CRUD
-│   │   ├── products.ts       # 4 tools — CRUD
+│   │   ├── interactions.ts   # 5 tools — CRUD
+│   │   ├── quotes.ts         # 5 tools — CRUD
+│   │   ├── orders.ts         # 5 tools — CRUD
+│   │   ├── products.ts       # 5 tools — CRUD
+│   │   ├── lookups.ts        # 12 tools — Reference/lookup data
 │   │   ├── fields.ts         # 1 tool  — List fields
 │   │   ├── users.ts          # 1 tool  — List users
 │   │   └── account.ts        # 1 tool  — Account info
 │   ├── types/
-│   │   └── ploomes.ts        # TypeScript interfaces for all entities
+│   │   ├── ploomes.ts        # TypeScript interfaces for all entities
+│   │   └── schemas.ts        # Shared Zod schemas (OtherProperties, etc.)
 │   └── utils/
 │       ├── formatter.ts      # Standardized MCP response builders
 │       └── logger.ts         # stderr logger (debug/info/warn/error)
@@ -177,6 +230,9 @@ ploomes-mcp-server/
 - **Automatic retries** — exponential backoff on HTTP 429 (rate limit) and 5xx (server errors), up to 3 retries.
 - **Descriptive errors** — `"Resource not found: /Contacts(999)"` instead of `"Error"`.
 - **Tool descriptions in English** — optimized for LLM understanding. Data from Ploomes may be in pt-BR.
+- **Lookup tools** — dedicated tools for discovering valid IDs (types, statuses, origins, currencies, etc.) so the AI agent can self-serve without guessing.
+- **Shared Zod schemas** — `OtherProperties` schema reused across all tools that support custom fields.
+- **One-command setup** — `npx ploomes-mcp-server init` configures any supported MCP client.
 - **No bundler** — plain `tsc` compilation to `dist/`.
 
 ---
@@ -192,6 +248,7 @@ ploomes-mcp-server/
 | HTTP client | Native `fetch` |
 | Build | `tsc` (no bundler) |
 | Transport | stdio (local) / Streamable HTTP (remote) |
+| Distribution | npm (`npx ploomes-mcp-server`) |
 
 ---
 

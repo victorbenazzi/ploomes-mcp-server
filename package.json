@@ -17,6 +17,7 @@
     "build": "tsc",
     "clean": "rm -rf dist",
     "dev": "tsc --watch",
+    "prepare": "npm run build",
     "prepublishOnly": "npm run clean && npm run build"
   },
   "engines": {
@@ -45,7 +46,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/victorb/ploomes-mcp-server.git"
+    "url": "git+https://github.com/victorbenazzi/ploomes-mcp-server.git"
   },
-  "homepage": "https://github.com/victorb/ploomes-mcp-server#readme"
+  "homepage": "https://github.com/victorbenazzi/ploomes-mcp-server#readme"
 }

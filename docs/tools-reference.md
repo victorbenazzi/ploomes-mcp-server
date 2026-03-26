@@ -2,7 +2,7 @@
 
 [&larr; Back to README](../README.md)
 
-Complete reference for all 43 tools exposed by the Ploomes MCP Server.
+Complete reference for all 56 tools exposed by the Ploomes MCP Server.
 
 ---
 
@@ -12,15 +12,16 @@ Complete reference for all 43 tools exposed by the Ploomes MCP Server.
 - [Custom Fields (OtherProperties)](#custom-fields-otherproperties)
 - [Contacts (5 tools)](#contacts)
 - [Deals (8 tools)](#deals)
-- [Tasks (5 tools)](#tasks)
+- [Tasks (6 tools)](#tasks)
 - [Pipelines & Stages (2 tools)](#pipelines--stages)
-- [Interactions (4 tools)](#interactions)
-- [Quotes (4 tools)](#quotes)
-- [Orders (4 tools)](#orders)
-- [Products (4 tools)](#products)
+- [Interactions (5 tools)](#interactions)
+- [Quotes (5 tools)](#quotes)
+- [Orders (5 tools)](#orders)
+- [Products (5 tools)](#products)
 - [Fields (1 tool)](#fields)
 - [Users (1 tool)](#users)
 - [Account (1 tool)](#account)
+- [Lookup Tools (12 tools)](#lookup-tools)
 
 ---
 
@@ -117,6 +118,8 @@ ploomes_fields_list with filter: "EntityId eq 1"   → Contact fields
 ploomes_fields_list with filter: "EntityId eq 2"   → Deal fields
 ```
 
+Use `ploomes_fields_entities_list` to discover which EntityId maps to which entity.
+
 ---
 
 ## Contacts
@@ -178,15 +181,15 @@ Create a new contact.
 | Parameter | Type | Required | Description |
 |---|---|---|---|
 | `Name` | string | **Yes** | Contact name |
-| `TypeId` | number | No | Contact type ID |
+| `TypeId` | number | No | Contact type ID (use `ploomes_contacts_types_list` to find) |
 | `LegalName` | string | No | Legal / company name |
 | `Register` | string | No | CPF or CNPJ |
 | `Email` | string | No | Email address |
 | `Phone` | string | No | Phone number |
-| `StatusId` | number | No | Status ID |
+| `StatusId` | number | No | Status ID (use `ploomes_contacts_status_list` to find) |
 | `CompanyId` | number | No | Parent company contact ID |
-| `OwnerId` | number | No | Owner user ID |
-| `OriginId` | number | No | Origin ID |
+| `OwnerId` | number | No | Owner user ID (use `ploomes_users_list` to find) |
+| `OriginId` | number | No | Origin ID (use `ploomes_contacts_origins_list` to find) |
 | `StreetAddress` | string | No | Street address |
 | `ZipCode` | string | No | Zip / postal code |
 | `CityId` | number | No | City ID |
@@ -280,10 +283,10 @@ Create a new deal.
 | `Title` | string | **Yes** | Deal title |
 | `ContactId` | number | No | Contact (company) ID |
 | `PersonId` | number | No | Person contact ID |
-| `StageId` | number | No | Pipeline stage ID |
+| `StageId` | number | No | Pipeline stage ID (use `ploomes_stages_list` to find) |
 | `OwnerId` | number | No | Owner user ID |
 | `Amount` | number | No | Monetary value |
-| `CurrencyId` | number | No | Currency ID |
+| `CurrencyId` | number | No | Currency ID (use `ploomes_currencies_list` to find) |
 | `OriginId` | number | No | Origin ID |
 | `OtherProperties` | array | No | Custom field values |
 
@@ -339,9 +342,7 @@ Mark a deal as lost. Requires a loss reason.
 | Parameter | Type | Required | Description |
 |---|---|---|---|
 | `id` | number | **Yes** | Deal ID |
-| `LossReasonId` | number | **Yes** | Loss reason ID |
-
-> Tip: You can find valid loss reason IDs by querying the Ploomes API for `Deals@LossReasons`.
+| `LossReasonId` | number | **Yes** | Loss reason ID (use `ploomes_deals_loss_reasons_list` to find) |
 
 ---
 
@@ -363,7 +364,7 @@ Search and list tasks.
 
 **Parameters:** [Common OData parameters](#common-parameters-odata)
 
-**Available `expand` values:** `Deal`, `Contact`, `Owner`, `Type`, `OtherProperties`
+**Available `expand` values:** `Type`, `Contact`, `Deal`, `Owner`, `Users`, `Tags`, `Comments`, `InteractionRecord`, `InteractionRecords`, `Creator`, `OtherProperties`, `Attachments`
 
 **Examples:**
 
@@ -377,6 +378,18 @@ ploomes_tasks_list with filter: "OwnerId eq 42 and Finished eq false and Date lt
 
 ---
 
+### `ploomes_tasks_get`
+
+Get a single task by ID.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `id` | number | **Yes** | Task ID |
+| `expand` | string | No | E.g.: `"Type,Contact,Deal,Owner,OtherProperties"` |
+| `select` | string | No | Fields to return |
+
+---
+
 ### `ploomes_tasks_create`
 
 | Parameter | Type | Required | Description |
@@ -387,7 +400,7 @@ ploomes_tasks_list with filter: "OwnerId eq 42 and Finished eq false and Date lt
 | `DealId` | number | No | Associated deal ID |
 | `ContactId` | number | No | Associated contact ID |
 | `OwnerId` | number | No | Owner user ID |
-| `TypeId` | number | No | Task type ID |
+| `TypeId` | number | No | Task type ID (use `ploomes_tasks_types_list` to find) |
 | `OtherProperties` | array | No | Custom field values |
 
 ---
@@ -463,6 +476,18 @@ ploomes_interactions_list with filter: "DealId eq 789", orderby: "Date desc", to
 
 ---
 
+### `ploomes_interactions_get`
+
+Get a single interaction record by ID.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `id` | number | **Yes** | Interaction record ID |
+| `expand` | string | No | Related entities to include |
+| `select` | string | No | Fields to return |
+
+---
+
 ### `ploomes_interactions_create`
 
 | Parameter | Type | Required | Description |
@@ -503,6 +528,18 @@ List quotes (proposals).
 
 ---
 
+### `ploomes_quotes_get`
+
+Get a single quote by ID.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `id` | number | **Yes** | Quote ID |
+| `expand` | string | No | Related entities to include |
+| `select` | string | No | Fields to return |
+
+---
+
 ### `ploomes_quotes_create`
 
 | Parameter | Type | Required |
@@ -536,6 +573,18 @@ List orders.
 
 ---
 
+### `ploomes_orders_get`
+
+Get a single order by ID.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `id` | number | **Yes** | Order ID |
+| `expand` | string | No | Related entities to include |
+| `select` | string | No | Fields to return |
+
+---
+
 ### `ploomes_orders_create`
 
 | Parameter | Type | Required |
@@ -566,6 +615,18 @@ Delete an order by ID.
 List products in the CRM catalog.
 
 **Parameters:** [Common OData parameters](#common-parameters-odata)
+
+---
+
+### `ploomes_products_get`
+
+Get a single product by ID.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `id` | number | **Yes** | Product ID |
+| `expand` | string | No | Related entities to include |
+| `select` | string | No | Fields to return |
 
 ---
 
@@ -636,6 +697,128 @@ ploomes_users_list with select: "Id,Name,Email"
 Get information about the current Ploomes account (company name, settings, plan details).
 
 **Parameters:** None.
+
+---
+
+## Lookup Tools
+
+Lookup tools provide reference data for discovering valid IDs and enum values. They are read-only and accept standard OData parameters (`filter`, `select`, `orderby`, `top`, `skip`).
+
+Use these tools to find the correct IDs before creating or updating records.
+
+### `ploomes_contacts_types_list`
+
+List available contact types (e.g., Person, Company).
+
+```
+ploomes_contacts_types_list
+→ Returns: Id, Name for each type
+```
+
+Use the returned `Id` as `TypeId` when creating/updating contacts.
+
+---
+
+### `ploomes_contacts_status_list`
+
+List available contact statuses (e.g., Active, Inactive).
+
+Use the returned `Id` as `StatusId` when creating/updating contacts.
+
+---
+
+### `ploomes_contacts_origins_list`
+
+List available contact origins (e.g., Website, Referral, Cold Call).
+
+Use the returned `Id` as `OriginId` when creating/updating contacts.
+
+---
+
+### `ploomes_deals_status_list`
+
+List deal statuses (Open, Won, Lost).
+
+---
+
+### `ploomes_deals_loss_reasons_list`
+
+List available loss reasons for marking deals as lost.
+
+Use the returned `Id` as `LossReasonId` when calling `ploomes_deals_lose`.
+
+---
+
+### `ploomes_tasks_types_list`
+
+List available task types (e.g., Call, Meeting, Email, Visit).
+
+Use the returned `Id` as `TypeId` when creating/updating tasks.
+
+---
+
+### `ploomes_currencies_list`
+
+List available currencies configured in the Ploomes account.
+
+Use the returned `Id` as `CurrencyId` when creating/updating deals.
+
+---
+
+### `ploomes_fields_entities_list`
+
+List entities that support custom fields. Returns the mapping of `EntityId` to entity name (e.g., 1 = Contact, 2 = Deal).
+
+Use this to know which `EntityId` to filter by when calling `ploomes_fields_list`.
+
+---
+
+### `ploomes_fields_types_list`
+
+List custom field data types (e.g., String, Integer, DateTime, Boolean, BigString, Options).
+
+---
+
+### `ploomes_fields_options_tables_list`
+
+List dropdown option tables. Each table contains a set of options that can be used in dropdown-type custom fields.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `filter` | string | No | OData filter |
+| `top` | number | No | Max items (default 50) |
+| `skip` | number | No | Items to skip |
+
+---
+
+### `ploomes_fields_options_list`
+
+List options within a specific dropdown table.
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `tableId` | number | **Yes** | Options table ID (from `ploomes_fields_options_tables_list`) |
+| `filter` | string | No | OData filter |
+| `top` | number | No | Max items (default 50) |
+| `skip` | number | No | Items to skip |
+
+**Example:**
+
+```
+# First, find the options table
+ploomes_fields_options_tables_list
+
+# Then list its options
+ploomes_fields_options_list with tableId: 123
+```
+
+---
+
+### `ploomes_orders_stages_list`
+
+List order workflow stages.
+
+Use the returned `Id` as `StageId` when creating/updating orders.
 
 ---
 
