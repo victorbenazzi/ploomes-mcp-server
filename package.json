@@ -1,0 +1,30 @@
+{
+  "name": "ploomes-mcp-server",
+  "version": "1.0.0",
+  "description": "Unofficial MCP server for Ploomes CRM — connects AI agents to the Ploomes REST API",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "ploomes-mcp-server": "dist/index.js"
+  },
+  "scripts": {
+    "start": "node dist/index.js",
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "dev": "tsc --watch"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "dotenv": "^16.4.7",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.2"
+  },
+  "keywords": ["mcp", "ploomes", "crm", "ai", "model-context-protocol"],
+  "license": "MIT"
+}
