@@ -1,6 +1,6 @@
 {
   "name": "ploomes-mcp-server",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Unofficial MCP server for Ploomes CRM — connects AI agents to the Ploomes REST API",
   "type": "module",
   "main": "dist/index.js",
