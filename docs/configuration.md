@@ -117,15 +117,18 @@ mcp.yourdomain.com {
 
 Edit `claude_desktop_config.json`:
 
-**macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
-**Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+- **Linux:** `~/.config/Claude/claude_desktop_config.json`
+
+**macOS / Linux:**
 
 ```json
 {
   "mcpServers": {
     "ploomes": {
-      "command": "node",
-      "args": ["/absolute/path/to/ploomes-mcp-server/dist/index.js"],
+      "command": "npx",
+      "args": ["-y", "ploomes-mcp-server"],
       "env": {
         "PLOOMES_USER_KEY": "your-key-here"
       }
@@ -133,6 +136,24 @@ Edit `claude_desktop_config.json`:
   }
 }
 ```
+
+**Windows:**
+
+```json
+{
+  "mcpServers": {
+    "ploomes": {
+      "command": "npx.cmd",
+      "args": ["-y", "ploomes-mcp-server"],
+      "env": {
+        "PLOOMES_USER_KEY": "your-key-here"
+      }
+    }
+  }
+}
+```
+
+> **Why `npx.cmd`?** On Windows, MCP clients spawn processes directly without a shell. Since `npx` is a `.cmd` wrapper on Windows, the extension must be explicit. The `npx ploomes-mcp-server init` wizard handles this automatically.
 
 Restart Claude Desktop after editing. You should see the Ploomes tools appear in the tool picker.
 
@@ -146,8 +167,8 @@ Create `.mcp.json` in your project root:
 {
   "mcpServers": {
     "ploomes": {
-      "command": "node",
-      "args": ["/absolute/path/to/ploomes-mcp-server/dist/index.js"],
+      "command": "npx",
+      "args": ["-y", "ploomes-mcp-server"],
       "env": {
         "PLOOMES_USER_KEY": "your-key-here"
       }
@@ -159,9 +180,47 @@ Create `.mcp.json` in your project root:
 **Option B — CLI command:**
 
 ```bash
-claude mcp add ploomes node /absolute/path/to/ploomes-mcp-server/dist/index.js \
-  -e PLOOMES_USER_KEY=your-key-here
+claude mcp add ploomes -- npx -y ploomes-mcp-server -e PLOOMES_USER_KEY=your-key-here
 ```
+
+### Cursor
+
+Edit `~/.cursor/mcp.json` (global) or `.cursor/mcp.json` (project):
+
+```json
+{
+  "mcpServers": {
+    "ploomes": {
+      "command": "npx",
+      "args": ["-y", "ploomes-mcp-server"],
+      "env": {
+        "PLOOMES_USER_KEY": "your-key-here"
+      }
+    }
+  }
+}
+```
+
+### VS Code (Copilot)
+
+Create `.vscode/mcp.json` in your project:
+
+```json
+{
+  "servers": {
+    "ploomes": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "ploomes-mcp-server"],
+      "env": {
+        "PLOOMES_USER_KEY": "your-key-here"
+      }
+    }
+  }
+}
+```
+
+> **Note:** VS Code uses `"servers"` as the top-level key, not `"mcpServers"` like other clients.
 
 ### Remote Clients (Claude.ai, ChatGPT)
 
@@ -170,6 +229,8 @@ After deploying with HTTP transport and a reverse proxy:
 1. Get your server URL: `https://mcp.yourdomain.com/mcp`
 2. Add as a remote MCP server in your client's settings
 3. The client will POST JSON-RPC requests to that endpoint
+
+> **Windows users:** In all JSON examples above (except VS Code), replace `"npx"` with `"npx.cmd"`. The `npx ploomes-mcp-server init` wizard handles this automatically.
 
 ---
 

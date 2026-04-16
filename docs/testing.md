@@ -26,7 +26,7 @@ npx @modelcontextprotocol/inspector node dist/index.js
 
 This opens a web UI (usually at `http://localhost:6274`) where you can:
 
-1. See all 43 registered tools
+1. See all 56 registered tools
 2. Click any tool to see its schema and description
 3. Fill in parameters and execute tool calls
 4. Inspect the JSON response

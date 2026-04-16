@@ -1,3 +1,4 @@
+import { createRequire } from "node:module";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { PloomesClient } from "./client/ploomes-client.js";
 import { registerContactTools } from "./tools/contacts.js";
@@ -12,6 +13,9 @@ import { registerQuoteTools } from "./tools/quotes.js";
 import { registerOrderTools } from "./tools/orders.js";
 import { registerProductTools } from "./tools/products.js";
 import { registerLookupTools } from "./tools/lookups.js";
+
+const require = createRequire(import.meta.url);
+const { version } = require("../package.json") as { version: string };
 
 export function createServer(): McpServer {
   const userKey = process.env.PLOOMES_USER_KEY;
@@ -29,7 +33,7 @@ export function createServer(): McpServer {
 
   const server = new McpServer({
     name: "ploomes-mcp-server",
-    version: "1.0.0",
+    version,
   });
 
   // Priority 1 — Core

@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 
 import "dotenv/config";
+import { createRequire } from "node:module";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { createServer } from "./server.js";
 import { logger } from "./utils/logger.js";
 
-const VERSION = "1.0.0";
+const require = createRequire(import.meta.url);
+const { version: VERSION } = require("../package.json") as { version: string };
 
 function printHelp(): void {
   console.log(`

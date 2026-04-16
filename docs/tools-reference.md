@@ -793,13 +793,12 @@ List dropdown option tables. Each table contains a set of options that can be us
 
 ### `ploomes_fields_options_list`
 
-List options within a specific dropdown table.
+List individual options within a dropdown-type custom field. Filter by `OptionsTableId` to get options for a specific dropdown.
 
 | Parameter | Type | Required | Description |
 |---|---|---|---|
-| `tableId` | number | **Yes** | Options table ID (from `ploomes_fields_options_tables_list`) |
-| `filter` | string | No | OData filter |
-| `top` | number | No | Max items (default 50) |
+| `filter` | string | No | OData $filter. E.g.: `"OptionsTableId eq 123"` |
+| `top` | number | No | Max items (default 100) |
 | `skip` | number | No | Items to skip |
 
 **Example:**
@@ -809,7 +808,7 @@ List options within a specific dropdown table.
 ploomes_fields_options_tables_list
 
 # Then list its options
-ploomes_fields_options_list with tableId: 123
+ploomes_fields_options_list with filter: "OptionsTableId eq 123"
 ```
 
 ---
