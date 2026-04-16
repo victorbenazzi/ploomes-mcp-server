@@ -80,7 +80,7 @@ function maskKey(key: string): string {
 
 function buildServerConfig(userKey: string): McpServerConfig {
   return {
-    command: "npx",
+    command: process.platform === "win32" ? "npx.cmd" : "npx",
     args: ["-y", "ploomes-mcp-server"],
     env: {
       PLOOMES_USER_KEY: userKey,

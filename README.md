@@ -36,7 +36,12 @@ If you prefer to configure manually, add this to your MCP client config:
 
 ### Claude Desktop
 
-File: `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
+Config file location:
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+- **Linux**: `~/.config/Claude/claude_desktop_config.json`
+
+**macOS / Linux:**
 
 ```json
 {
@@ -51,6 +56,24 @@ File: `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
   }
 }
 ```
+
+**Windows:**
+
+```json
+{
+  "mcpServers": {
+    "ploomes": {
+      "command": "npx.cmd",
+      "args": ["-y", "ploomes-mcp-server"],
+      "env": {
+        "PLOOMES_USER_KEY": "your-key-here"
+      }
+    }
+  }
+}
+```
+
+> **Important:** On Windows you must use `npx.cmd` instead of `npx`. Claude Desktop on Windows does not use a shell to resolve commands, so `.cmd` extensions must be explicit.
 
 ### Claude Code
 
@@ -101,6 +124,8 @@ MCP_TRANSPORT=http MCP_HTTP_PORT=3000 PLOOMES_USER_KEY=your-key npx ploomes-mcp-
 ```
 
 Then point your MCP client to `https://your-server.com/mcp` (use a reverse proxy for HTTPS).
+
+> **Windows users:** In all JSON examples above, replace `"npx"` with `"npx.cmd"`. Windows does not resolve `.cmd` extensions automatically when MCP clients spawn processes directly. The `npx ploomes-mcp-server init` wizard handles this automatically.
 
 ---
 
