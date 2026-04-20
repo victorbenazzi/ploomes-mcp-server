@@ -79,9 +79,17 @@ function maskKey(key: string): string {
 }
 
 function buildServerConfig(userKey: string): McpServerConfig {
+  // On Windows, MCP clients spawn the command without a shell. Node's spawn()
+  // cannot resolve `.cmd` / `.bat` directly, so `npx.cmd` fails silently
+  // (server never starts, no tools appear in the chat). The reliable fix is
+  // to invoke through `cmd /c`, which gives a shell that handles extension
+  // resolution and PATH lookup the way a user terminal would.
+  const isWindows = process.platform === "win32";
   return {
-    command: process.platform === "win32" ? "npx.cmd" : "npx",
-    args: ["-y", "ploomes-mcp-server"],
+    command: isWindows ? "cmd" : "npx",
+    args: isWindows
+      ? ["/c", "npx", "-y", "ploomes-mcp-server"]
+      : ["-y", "ploomes-mcp-server"],
     env: {
       PLOOMES_USER_KEY: userKey,
     },

@@ -17,6 +17,7 @@ function printHelp(): void {
   Usage:
     ploomes-mcp-server              Start the MCP server (stdio)
     ploomes-mcp-server init         Interactive setup wizard
+    ploomes-mcp-server doctor       Verify MCP configs and spawn behavior
     ploomes-mcp-server --help       Show this help
     ploomes-mcp-server --version    Show version
 
@@ -27,6 +28,7 @@ function printHelp(): void {
 
   Quick start:
     npx ploomes-mcp-server init
+    npx ploomes-mcp-server doctor
 `);
 }
 
@@ -36,6 +38,12 @@ async function main(): Promise<void> {
   if (arg === "init" || arg === "setup") {
     const { runSetup } = await import("./cli/setup.js");
     await runSetup();
+    return;
+  }
+
+  if (arg === "doctor" || arg === "verify") {
+    const { runDoctor } = await import("./cli/doctor.js");
+    await runDoctor();
     return;
   }
 

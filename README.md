@@ -63,8 +63,8 @@ Config file location:
 {
   "mcpServers": {
     "ploomes": {
-      "command": "npx.cmd",
-      "args": ["-y", "ploomes-mcp-server"],
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "ploomes-mcp-server"],
       "env": {
         "PLOOMES_USER_KEY": "your-key-here"
       }
@@ -73,7 +73,13 @@ Config file location:
 }
 ```
 
-> **Important:** On Windows you must use `npx.cmd` instead of `npx`. Claude Desktop on Windows does not use a shell to resolve commands, so `.cmd` extensions must be explicit.
+> **Important:** On Windows you must wrap the command with `cmd /c`. MCP clients (Claude Desktop, Claude Code, Cursor) spawn commands without a shell, and Node's `spawn()` on Windows cannot resolve `.cmd`/`.bat` files directly. Using `"command": "npx"` or `"command": "npx.cmd"` alone results in the server failing to start silently — the config is saved, but no tools appear in the chat. `cmd /c npx` delegates to a real shell that handles PATH and extension resolution.
+>
+> If you already tried `init` on an older version and the tools aren't showing up, re-run:
+> ```
+> npx ploomes-mcp-server@latest init
+> npx ploomes-mcp-server@latest doctor
+> ```
 
 ### Claude Code
 
@@ -125,7 +131,7 @@ MCP_TRANSPORT=http MCP_HTTP_PORT=3000 PLOOMES_USER_KEY=your-key npx ploomes-mcp-
 
 Then point your MCP client to `https://your-server.com/mcp` (use a reverse proxy for HTTPS).
 
-> **Windows users:** In all JSON examples above, replace `"npx"` with `"npx.cmd"`. Windows does not resolve `.cmd` extensions automatically when MCP clients spawn processes directly. The `npx ploomes-mcp-server init` wizard handles this automatically.
+> **Windows users:** In all JSON examples above, replace the `command` / `args` with the `cmd /c npx -y ploomes-mcp-server` pattern shown in the Claude Desktop Windows example. MCP clients on Windows cannot spawn `.cmd` files directly — you must delegate through `cmd`. The `npx ploomes-mcp-server init` wizard does this automatically.
 
 ---
 
@@ -134,6 +140,7 @@ Then point your MCP client to `https://your-server.com/mcp` (use a reverse proxy
 ```bash
 npx ploomes-mcp-server              # Start the MCP server (stdio)
 npx ploomes-mcp-server init         # Interactive setup wizard
+npx ploomes-mcp-server doctor       # Diagnose configs and spawn behavior
 npx ploomes-mcp-server --help       # Show usage
 npx ploomes-mcp-server --version    # Show version
 ```
@@ -274,6 +281,30 @@ ploomes-mcp-server/
 | Build | `tsc` (no bundler) |
 | Transport | stdio (local) / Streamable HTTP (remote) |
 | Distribution | npm (`npx ploomes-mcp-server`) |
+
+---
+
+## Troubleshooting (Windows)
+
+**Symptom:** `npx ploomes-mcp-server init` succeeds, writes the config, but the tools never appear in Claude Desktop / Claude Code / Cursor.
+
+**Cause:** Older versions generated `"command": "npx.cmd"`. MCP clients on Windows spawn commands without a shell, so Node's `spawn()` cannot resolve `.cmd` extensions directly. The server fails to start and the client shows no error in the UI.
+
+**Fix:**
+
+```powershell
+npx ploomes-mcp-server@latest init
+npx ploomes-mcp-server@latest doctor
+```
+
+The updated wizard generates `"command": "cmd"` with `"args": ["/c", "npx", "-y", "ploomes-mcp-server"]`, which works across Claude Desktop, Claude Code, Cursor, and VS Code on Windows.
+
+**Still stuck?**
+
+1. Fully quit Claude Desktop (right-click system tray icon → Quit — closing the window is not enough).
+2. Inspect logs at `%APPDATA%\Claude\logs\mcp-server-ploomes.log`.
+3. Run `npx ploomes-mcp-server doctor` — it validates your config and tests that `cmd /c npx` actually spawns.
+4. If you edited the config manually, ensure the JSON is valid (commas, braces) and the `"ploomes"` entry sits inside `"mcpServers"`.
 
 ---
 
