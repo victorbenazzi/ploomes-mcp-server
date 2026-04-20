@@ -15,21 +15,71 @@ function printHelp(): void {
   Unofficial MCP server for Ploomes CRM
 
   Usage:
-    ploomes-mcp-server              Start the MCP server (stdio)
-    ploomes-mcp-server init         Interactive setup wizard
-    ploomes-mcp-server doctor       Verify MCP configs and spawn behavior
-    ploomes-mcp-server --help       Show this help
-    ploomes-mcp-server --version    Show version
+    ploomes-mcp-server                       Start the MCP server (stdio)
+    ploomes-mcp-server init                  Interactive setup wizard
+    ploomes-mcp-server init [flags]          Non-interactive setup (see below)
+    ploomes-mcp-server doctor                Verify MCP configs and spawn behavior
+    ploomes-mcp-server --help                Show this help
+    ploomes-mcp-server --version             Show version
+
+  Init flags (non-interactive):
+    --key <user-key>       Ploomes User-Key (or set PLOOMES_USER_KEY env var)
+    --target <name>        Which client to configure. One of:
+                             claude-desktop
+                             claude-code-project
+                             claude-code-global
+                             cursor
+                             vscode
+                             all        (configures every global client)
+                             manual     (prints JSON, writes nothing)
+    --yes                  Overwrite existing "ploomes" entries without asking
+    -y                     Alias for --yes
 
   Environment:
     PLOOMES_USER_KEY      (required) Your Ploomes API key
     MCP_TRANSPORT         "stdio" (default) or "http"
     MCP_HTTP_PORT         HTTP port when using http transport (default: 3000)
 
-  Quick start:
+  Examples:
     npx ploomes-mcp-server init
+    npx ploomes-mcp-server init --key YOUR_KEY --target all --yes
+    npx ploomes-mcp-server init --target claude-desktop --yes       # reads PLOOMES_USER_KEY
     npx ploomes-mcp-server doctor
 `);
+}
+
+interface ParsedInitFlags {
+  userKey?: string;
+  target?: string;
+  yes?: boolean;
+}
+
+function parseInitFlags(argv: readonly string[]): ParsedInitFlags {
+  const out: ParsedInitFlags = {};
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg === "--yes" || arg === "-y" || arg === "--force") {
+      out.yes = true;
+      continue;
+    }
+    if (arg === "--key" || arg === "-k") {
+      out.userKey = argv[++i];
+      continue;
+    }
+    if (arg.startsWith("--key=")) {
+      out.userKey = arg.slice("--key=".length);
+      continue;
+    }
+    if (arg === "--target" || arg === "-t") {
+      out.target = argv[++i];
+      continue;
+    }
+    if (arg.startsWith("--target=")) {
+      out.target = arg.slice("--target=".length);
+      continue;
+    }
+  }
+  return out;
 }
 
 async function main(): Promise<void> {
@@ -37,7 +87,8 @@ async function main(): Promise<void> {
 
   if (arg === "init" || arg === "setup") {
     const { runSetup } = await import("./cli/setup.js");
-    await runSetup();
+    const flags = parseInitFlags(process.argv.slice(3));
+    await runSetup(flags);
     return;
   }
 

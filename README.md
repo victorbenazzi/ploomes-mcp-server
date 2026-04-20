@@ -23,6 +23,34 @@ The interactive wizard will:
 
 That's it. No cloning, no building, no manual config editing.
 
+### Non-interactive setup (scripts, CI, deploying to teammates)
+
+Pass flags and the wizard skips every prompt:
+
+```bash
+# Configure every global client (Claude Desktop + Claude Code + Cursor) in one shot
+npx ploomes-mcp-server init --key YOUR_USER_KEY --target all --yes
+
+# Single target
+npx ploomes-mcp-server init --key YOUR_USER_KEY --target claude-desktop --yes
+
+# Read the key from the environment instead of the command line
+export PLOOMES_USER_KEY=YOUR_USER_KEY
+npx ploomes-mcp-server init --target all --yes
+```
+
+**Flags:**
+
+| Flag | Value | Description |
+|---|---|---|
+| `--key`, `-k` | `<user-key>` | Ploomes User-Key. Falls back to `PLOOMES_USER_KEY` env var if omitted. |
+| `--target`, `-t` | see below | Which client to configure. Required for non-interactive mode. |
+| `--yes`, `-y` | (flag) | Overwrite existing `ploomes` entries without asking. |
+
+**`--target` values:** `claude-desktop`, `claude-code-project`, `claude-code-global`, `cursor`, `vscode`, `all` (every global client), `manual` (print JSON only).
+
+> **Security:** putting the key directly in the command line leaves it in your shell history. Prefer `export PLOOMES_USER_KEY=…` first, then call `init --target all --yes`.
+
 ### Prerequisites
 
 - **Node.js 20+** (uses native `fetch`)
@@ -138,11 +166,13 @@ Then point your MCP client to `https://your-server.com/mcp` (use a reverse proxy
 ## CLI
 
 ```bash
-npx ploomes-mcp-server              # Start the MCP server (stdio)
-npx ploomes-mcp-server init         # Interactive setup wizard
-npx ploomes-mcp-server doctor       # Diagnose configs and spawn behavior
-npx ploomes-mcp-server --help       # Show usage
-npx ploomes-mcp-server --version    # Show version
+npx ploomes-mcp-server                                           # Start the MCP server (stdio)
+npx ploomes-mcp-server init                                      # Interactive setup wizard
+npx ploomes-mcp-server init --key KEY --target all --yes         # Non-interactive
+npx ploomes-mcp-server init --target claude-desktop --yes        # Uses PLOOMES_USER_KEY env
+npx ploomes-mcp-server doctor                                    # Diagnose configs and spawn behavior
+npx ploomes-mcp-server --help                                    # Show usage
+npx ploomes-mcp-server --version                                 # Show version
 ```
 
 ### Environment Variables

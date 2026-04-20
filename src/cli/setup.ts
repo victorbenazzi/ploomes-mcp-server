@@ -18,6 +18,13 @@ interface Target {
   getPath: () => string;
   scope: "project" | "global";
   configKey: string; // top-level key that wraps servers ("mcpServers" or nested)
+  alias: string; // CLI alias used with --target
+}
+
+export interface SetupOptions {
+  userKey?: string;
+  target?: string; // alias, "all", "manual", or undefined
+  yes?: boolean; // auto-overwrite
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -40,6 +47,7 @@ const TARGETS: Target[] = [
     getPath: () => path.join(claudeDesktopConfigDir(), "claude_desktop_config.json"),
     scope: "global",
     configKey: "mcpServers",
+    alias: "claude-desktop",
   },
   {
     label: "Claude Code (this project)",
@@ -47,6 +55,7 @@ const TARGETS: Target[] = [
     getPath: () => path.join(process.cwd(), ".mcp.json"),
     scope: "project",
     configKey: "mcpServers",
+    alias: "claude-code-project",
   },
   {
     label: "Claude Code (global)",
@@ -54,6 +63,7 @@ const TARGETS: Target[] = [
     getPath: () => path.join(os.homedir(), ".claude", "settings.json"),
     scope: "global",
     configKey: "mcpServers",
+    alias: "claude-code-global",
   },
   {
     label: "Cursor",
@@ -61,6 +71,7 @@ const TARGETS: Target[] = [
     getPath: () => path.join(os.homedir(), ".cursor", "mcp.json"),
     scope: "global",
     configKey: "mcpServers",
+    alias: "cursor",
   },
   {
     label: "VS Code (Copilot)",
@@ -68,6 +79,7 @@ const TARGETS: Target[] = [
     getPath: () => path.join(process.cwd(), ".vscode", "mcp.json"),
     scope: "project",
     configKey: "servers",
+    alias: "vscode",
   },
 ];
 
@@ -113,6 +125,53 @@ function writeJsonFile(filePath: string, data: Record<string, unknown>): void {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2) + "\n", "utf-8");
 }
 
+function printManualConfig(serverConfig: McpServerConfig): void {
+  console.log("  Add this to your MCP client configuration:");
+  console.log("");
+  console.log("  " + JSON.stringify({ ploomes: serverConfig }, null, 2).split("\n").join("\n  "));
+  console.log("");
+  console.log("  Done! Add the above under your client's \"mcpServers\" key.");
+}
+
+function applyToTarget(
+  target: Target,
+  serverConfig: McpServerConfig,
+  { force }: { force: boolean },
+): { written: boolean; path: string; reason?: string } {
+  const configPath = target.getPath();
+  const existing = readJsonFile(configPath);
+  const serversKey = target.configKey;
+
+  if (!existing[serversKey] || typeof existing[serversKey] !== "object") {
+    existing[serversKey] = {};
+  }
+
+  const servers = existing[serversKey] as Record<string, unknown>;
+
+  if (servers["ploomes"] && !force) {
+    return { written: false, path: configPath, reason: "already exists (pass --yes to overwrite)" };
+  }
+
+  servers["ploomes"] = serverConfig;
+  writeJsonFile(configPath, existing);
+  return { written: true, path: configPath };
+}
+
+function restartHintFor(target: Target): string | null {
+  if (target.label.startsWith("Claude Desktop")) return "Restart Claude Desktop to activate the server.";
+  if (target.label.startsWith("Claude Code")) return "The server will be available on your next Claude Code session.";
+  if (target.label === "Cursor") return "Restart Cursor to activate the server.";
+  if (target.label.startsWith("VS Code")) return "Reload VS Code window to activate the server.";
+  return null;
+}
+
+function resolveTargets(alias: string): Target[] | "manual" | null {
+  if (alias === "manual") return "manual";
+  if (alias === "all") return TARGETS.filter((t) => t.scope === "global");
+  const match = TARGETS.find((t) => t.alias === alias);
+  return match ? [match] : null;
+}
+
 // ── Interactive prompts ──────────────────────────────────────────────────────
 
 async function askUserKey(rl: readline.Interface): Promise<string> {
@@ -151,7 +210,78 @@ async function askTarget(rl: readline.Interface): Promise<number> {
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 
-export async function runSetup(): Promise<void> {
+export async function runSetup(options: SetupOptions = {}): Promise<void> {
+  const envKey = process.env.PLOOMES_USER_KEY?.trim();
+  const flagKey = options.userKey?.trim();
+  const userKeyFromFlags = flagKey && flagKey.length > 0 ? flagKey : envKey && envKey.length > 0 ? envKey : undefined;
+
+  // Non-interactive path: --target was supplied, or both key sources and --yes exist
+  const nonInteractive = Boolean(options.target);
+
+  if (nonInteractive) {
+    await runNonInteractive(options, userKeyFromFlags);
+    return;
+  }
+
+  // Fallback to interactive wizard (original behavior)
+  await runInteractive(userKeyFromFlags);
+}
+
+async function runNonInteractive(options: SetupOptions, userKey: string | undefined): Promise<void> {
+  console.log("");
+  console.log("  Ploomes MCP Server — non-interactive setup");
+  console.log("");
+
+  if (!userKey) {
+    console.error("  Error: --key is required (or set PLOOMES_USER_KEY env var).");
+    process.exitCode = 1;
+    return;
+  }
+
+  const targetAlias = (options.target ?? "").trim();
+  const resolved = resolveTargets(targetAlias);
+
+  if (resolved === null) {
+    const allowed = [...TARGETS.map((t) => t.alias), "all", "manual"].join(", ");
+    console.error(`  Error: unknown --target "${targetAlias}". Allowed: ${allowed}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  const serverConfig = buildServerConfig(userKey);
+
+  if (resolved === "manual") {
+    printManualConfig(serverConfig);
+    return;
+  }
+
+  const force = Boolean(options.yes);
+  const results = resolved.map((target) => ({
+    target,
+    result: applyToTarget(target, serverConfig, { force }),
+  }));
+
+  let wrote = 0;
+  for (const { target, result } of results) {
+    if (result.written) {
+      wrote++;
+      console.log(`  [OK]   ${target.label}`);
+      console.log(`         ${result.path}`);
+      const hint = restartHintFor(target);
+      if (hint) console.log(`         ${hint}`);
+    } else {
+      console.log(`  [SKIP] ${target.label} — ${result.reason}`);
+      console.log(`         ${result.path}`);
+    }
+  }
+
+  console.log("");
+  console.log(`  User-Key: ${maskKey(userKey)}`);
+  console.log(`  Wrote: ${wrote} / ${resolved.length}`);
+  if (wrote === 0) process.exitCode = 2;
+}
+
+async function runInteractive(prefillKey: string | undefined): Promise<void> {
   const rl = readline.createInterface({ input, output });
 
   console.log("");
@@ -160,7 +290,12 @@ export async function runSetup(): Promise<void> {
   console.log("  ╚══════════════════════════════════════════╝");
 
   try {
-    const userKey = await askUserKey(rl);
+    const userKey = prefillKey ?? (await askUserKey(rl));
+    if (prefillKey) {
+      console.log("");
+      console.log(`  Using Ploomes User-Key from env/flag: ${maskKey(prefillKey)}`);
+    }
+
     const targetIndex = await askTarget(rl);
     const serverConfig = buildServerConfig(userKey);
 
@@ -168,28 +303,21 @@ export async function runSetup(): Promise<void> {
 
     // Manual mode — just print the JSON
     if (targetIndex === MANUAL_INDEX) {
-      console.log("  Add this to your MCP client configuration:");
-      console.log("");
-      console.log("  " + JSON.stringify({ ploomes: serverConfig }, null, 2).split("\n").join("\n  "));
-      console.log("");
-      console.log("  Done! Add the above under your client's \"mcpServers\" key.");
+      printManualConfig(serverConfig);
       return;
     }
 
-    // Auto-configure target
     const target = TARGETS[targetIndex];
     const configPath = target.getPath();
     const existing = readJsonFile(configPath);
-
-    // Ensure the servers object exists
     const serversKey = target.configKey;
+
     if (!existing[serversKey] || typeof existing[serversKey] !== "object") {
       existing[serversKey] = {};
     }
 
     const servers = existing[serversKey] as Record<string, unknown>;
 
-    // Check if already configured
     if (servers["ploomes"]) {
       const overwrite = (await rl.question("  Ploomes is already configured here. Overwrite? [y/N]: ")).trim().toLowerCase();
       if (overwrite !== "y" && overwrite !== "yes") {
@@ -207,17 +335,8 @@ export async function runSetup(): Promise<void> {
     console.log(`  User-Key: ${maskKey(userKey)}`);
     console.log("");
 
-    // Client-specific post-install hints
-    if (target.label.startsWith("Claude Desktop")) {
-      console.log("  Restart Claude Desktop to activate the server.");
-    } else if (target.label.startsWith("Claude Code")) {
-      console.log("  The server will be available on your next Claude Code session.");
-    } else if (target.label === "Cursor") {
-      console.log("  Restart Cursor to activate the server.");
-    } else if (target.label.startsWith("VS Code")) {
-      console.log("  Reload VS Code window to activate the server.");
-    }
-
+    const hint = restartHintFor(target);
+    if (hint) console.log(`  ${hint}`);
     console.log("");
     console.log("  You're all set! The Ploomes MCP tools are ready to use.");
   } finally {
